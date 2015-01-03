@@ -49,11 +49,18 @@ void aborted()
 void *timerfunction(void *i){
  	int a = *((int *) i);
   free(i);
-	usleep(100000);
+	usleep(1000000);
 	pthread_mutex_lock(&mutex1);
 	if(pstate!=a){
 		pthread_mutex_unlock(&mutex1);
 		return NULL;
+	}
+  printf("TIMEOUT - ABORTED\n");
+	for(int i=0;i<numberOfClients;i++)
+	{
+		int tmp=MSGABORT;
+		zmq_send (RCList[i], &tmp, sizeof(tmp), ZMQ_NOBLOCK);
+		printf("send %d\n",tmp);
 	}
 	aborted();
 	pthread_mutex_unlock(&mutex1);
@@ -81,22 +88,22 @@ void broadcastWantCommit(){
 		pthread_mutex_unlock(&mutex1);
 };
 void broadcastPreCommit(){
-	printf("bpc1\n");
+	// printf("bpc1\n");
 	pthread_mutex_lock(&mutex1);
-	printf("bpc2\n");
+	// printf("bpc2\n");
 	if(pstate!=STATEWAITING){
 		pthread_mutex_unlock(&mutex1);
 		return void();
 	}
 	numberOfACK++;
-	printf("bpc3\n");
+	// printf("bpc3\n");
 	if(numberOfACK<numberOfClients){
 		pthread_mutex_unlock(&mutex1);
 		return void();
 	}
-	printf("bpc4\n");
+	// printf("bpc4\n");
 	pthread_cancel(thread_timer);
-	printf("bpc5\n");
+	// printf("bpc5\n");
 	for(int i=0;i<numberOfClients;i++)
 	{
 
@@ -126,10 +133,12 @@ void broadcastAbort(){
 void broadcastDoCommit(){
 	pthread_mutex_lock(&mutex1);
 	if(pstate!=STATEPREPARED){
+		pthread_mutex_unlock(&mutex1);
 		return void();
 		}
 	numberOfACK++;
 	if(numberOfACK<numberOfClients){
+			pthread_mutex_unlock(&mutex1);
 			return void();
 		}
 	pthread_cancel(thread_timer);
@@ -150,10 +159,10 @@ void controlUnit(int msg)
 	//pstate=msg;
 
 	switch(msg){
-		case MSGCANCOMMIT: { broadcastWantCommit(); break;}
-		case MSGYES: { broadcastPreCommit(); break;}
-		case MSGNO: { broadcastAbort(); break;}
-		case MSGACK: { broadcastDoCommit(); break;}
+		case MSGCANCOMMIT: { printf("RECIV CANCOMMIT\n");broadcastWantCommit(); break;}
+		case MSGYES: { printf("RECIV YES\n");broadcastPreCommit(); break;}
+		case MSGNO: { printf("RECIV NO\n");broadcastAbort(); break;}
+		case MSGACK: { printf("RECIV ACK\n");broadcastDoCommit(); break;}
 	}
 };
 void init()
