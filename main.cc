@@ -28,7 +28,7 @@ int pstate=STATEFREE;
 int *msg;
 const int numberOfClients=2;
 int numberOfACK=0;
-int rank, size, chanceOfNotSend=0,chanceofError=15;
+int rank, size, chanceOfNotSend=0,changeOfError=10;
 void *context_Server = zmq_ctx_new ();
 void *responder_Server = zmq_socket (context_Server, ZMQ_PULL);
 int rc_Server = zmq_bind (responder_Server, "tcp://192.168.2.2:5555");
@@ -169,7 +169,7 @@ void controlUnit(int msg)
         printf("RECIV YES - ERROR\n");
         pthread_mutex_lock(&mutex1);
 				pthread_cancel(thread_timer);
-        state=STATEFREE;
+        pstate=STATEFREE;
 				numberOfACK=0;
         pthread_mutex_unlock(&mutex1);
       }else{
@@ -180,13 +180,13 @@ void controlUnit(int msg)
 			}
 		case MSGNO: {
 			if(rand()%100<changeOfError){
-				printf("RECIV YES - ERROR\n");
+				printf("RECIV NO - ERROR\n");
 				pthread_mutex_lock(&mutex1);
 				pthread_cancel(thread_timer);
-				state=STATEFREE;
+				pstate=STATEFREE;
 				numberOfACK=0;
 				pthread_mutex_unlock(&mutex1);
-			}
+			}else{
 				printf("RECIV NO\n");
 				broadcastAbort();
 			}
@@ -194,13 +194,13 @@ void controlUnit(int msg)
 			}
 		case MSGACK: {
 			if(rand()%100<changeOfError){
-				printf("RECIV YES - ERROR\n");
+				printf("RECIV ACK - ERROR\n");
 				pthread_mutex_lock(&mutex1);
 				pthread_cancel(thread_timer);
-				state=STATEFREE;
+				pstate=STATEFREE;
 				numberOfACK=0;
 				pthread_mutex_unlock(&mutex1);
-			}
+			}else{
 				printf("RECIV ACK\n");
 				broadcastDoCommit();
 			}
